@@ -15,7 +15,6 @@ temp-docs/
 *.dylib
 *.dll
 *.a
-*.lib
 
 # Executables
 *.out
