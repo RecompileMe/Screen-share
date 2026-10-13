@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(WebRTCRemoteDesktop VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -11,9 +11,39 @@ option(WEBRTC_REMOTE_DESKTOP_LIBDATACHANNEL_SOURCE_DIR "Path to libdatachannel s
 find_package(Threads REQUIRED)
 find_package(SDL2 REQUIRED)
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale)
+#pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale)
+if(APPLE)
+    enable_language(OBJCXX)
+    set(CMAKE_OBJCXX_STANDARD 23)
 
-if(UNIX)
+    add_library(libavcodec SHARED IMPORTED)
+    set_target_properties(libavcodec PROPERTIES
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libavcodec.dylib"
+            )
+    add_library(libavformat SHARED IMPORTED)
+    set_target_properties(libavformat PROPERTIES
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libavformat.dylib"
+            )
+    add_library(libavutil SHARED IMPORTED)
+    set_target_properties(libavutil PROPERTIES
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libavutil.dylib"
+            )
+    add_library(libswscale SHARED IMPORTED)
+    set_target_properties(libswscale PROPERTIES
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libswscale.dylib"
+            )
+    add_library(libSDL2d SHARED IMPORTED)
+    set_target_properties(libSDL2d PROPERTIES
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libSDL2d.dylib"
+            )
+    # Bridge local dylibs to the target expected by target_link_libraries
+    add_library(PkgConfig::FFMPEG INTERFACE IMPORTED)
+    target_link_libraries(PkgConfig::FFMPEG INTERFACE libavcodec libavformat libavutil libswscale)
+else()
+    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale)
+endif()
+
+if(UNIX AND NOT APPLE)
     pkg_check_modules(AVAHI REQUIRED IMPORTED_TARGET avahi-client)
     pkg_check_modules(UUID REQUIRED IMPORTED_TARGET uuid)
     pkg_check_modules(XCB REQUIRED IMPORTED_TARGET xcb xcb-shm xfixes xcb-randr)
@@ -35,7 +65,7 @@ else()
 endif()
 
 set(PROJECT_SOURCES
-    src/main.cpp
+    main.cpp
     src/mdns_broadcaster.cpp
     src/peer_registry.cpp
     src/state_machine.cpp
@@ -70,7 +100,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -80,7 +110,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Threads::Threads
 )
 
-if(UNIX)
+if(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         dl
         PkgConfig::AVAHI
