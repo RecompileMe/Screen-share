@@ -11,9 +11,9 @@ temp-docs/
 # Compiled objects
 *.o
 *.obj
-*.so
-*.dylib
-*.dll
+#*.so
+#*.dylib
+#*.dll
 *.a
 
 # Executables
