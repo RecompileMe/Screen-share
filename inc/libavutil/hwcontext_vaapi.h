@@ -19,6 +19,8 @@
 #ifndef AVUTIL_HWCONTEXT_VAAPI_H
 #define AVUTIL_HWCONTEXT_VAAPI_H
 
+#if defined(__linux__)
+
 #include <va/va.h>
 
 /**
@@ -26,7 +28,7 @@
  * API-specific header for AV_HWDEVICE_TYPE_VAAPI.
  *
  * Dynamic frame pools are supported, but note that any pool used as a render
- * target is required to be of fixed size in order to be be usable as an
+ * target is required to be of fixed size in order to be usable as an
  * argument to vaCreateContext().
  *
  * For user-allocated pools, AVHWFramesContext.pool must return AVBufferRefs
@@ -113,5 +115,7 @@ typedef struct AVVAAPIHWConfig {
      */
     VAConfigID config_id;
 } AVVAAPIHWConfig;
+
+#endif /* __linux__ */
 
 #endif /* AVUTIL_HWCONTEXT_VAAPI_H */

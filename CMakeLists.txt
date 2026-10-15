@@ -18,27 +18,32 @@ if(APPLE)
 
     add_library(libavcodec SHARED IMPORTED)
     set_target_properties(libavcodec PROPERTIES
-            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libavcodec.dylib"
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/mac_intel/libavcodec.dylib"
             )
     add_library(libavformat SHARED IMPORTED)
     set_target_properties(libavformat PROPERTIES
-            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libavformat.dylib"
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/mac_intel/libavformat.dylib"
             )
     add_library(libavutil SHARED IMPORTED)
     set_target_properties(libavutil PROPERTIES
-            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libavutil.dylib"
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/mac_intel/libavutil.dylib"
             )
     add_library(libswscale SHARED IMPORTED)
     set_target_properties(libswscale PROPERTIES
-            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libswscale.dylib"
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/mac_intel/libswscale.dylib"
             )
     add_library(libSDL2d SHARED IMPORTED)
     set_target_properties(libSDL2d PROPERTIES
-            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/libSDL2d.dylib"
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/mac_intel/libSDL2d.dylib"
+            )
+    add_library(libdatachannel SHARED IMPORTED)
+    set_target_properties(libdatachannel PROPERTIES
+            IMPORTED_LOCATION "${PROJECT_SOURCE_DIR}/lib/mac_intel/libdatachannel.dylib"
             )
     # Bridge local dylibs to the target expected by target_link_libraries
     add_library(PkgConfig::FFMPEG INTERFACE IMPORTED)
-    target_link_libraries(PkgConfig::FFMPEG INTERFACE libavcodec libavformat libavutil libswscale)
+    find_library(VIDEOTOOLBOX_FRAMEWORK VideoToolbox REQUIRED)
+    target_link_libraries(PkgConfig::FFMPEG INTERFACE libavcodec libavformat libavutil libswscale ${VIDEOTOOLBOX_FRAMEWORK})
 else()
     pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale)
 endif()
@@ -51,17 +56,17 @@ endif()
 
 if(WEBRTC_REMOTE_DESKTOP_USE_SYSTEM_LIBDATACHANNEL)
     find_package(LibDataChannel REQUIRED)
-elseif(WEBRTC_REMOTE_DESKTOP_LIBDATACHANNEL_SOURCE_DIR)
-    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-    add_subdirectory(${WEBRTC_REMOTE_DESKTOP_LIBDATACHANNEL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/_deps/libdatachannel-build)
-else()
-    include(FetchContent)
-    FetchContent_Declare(
-        libdatachannel
-        GIT_REPOSITORY https://github.com/paullouisageneau/libdatachannel.git
-        GIT_TAG        v0.21.2
-    )
-    FetchContent_MakeAvailable(libdatachannel)
+#elseif(WEBRTC_REMOTE_DESKTOP_LIBDATACHANNEL_SOURCE_DIR)
+#    set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+#    add_subdirectory(${WEBRTC_REMOTE_DESKTOP_LIBDATACHANNEL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/_deps/libdatachannel-build)
+#else()
+#    include(FetchContent)
+#    FetchContent_Declare(
+#        libdatachannel
+#        GIT_REPOSITORY https://github.com/paullouisageneau/libdatachannel.git
+#        GIT_TAG        v0.21.2
+#    )
+#    FetchContent_MakeAvailable(libdatachannel)
 endif()
 
 set(PROJECT_SOURCES
@@ -102,20 +107,25 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/inc
 )
-
+if(APPLE)
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    datachannel
+    libdatachannel
     PkgConfig::FFMPEG
     SDL2::SDL2
     Threads::Threads
 )
+endif()
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE
         dl
+        datachannel
         PkgConfig::AVAHI
         PkgConfig::UUID
         PkgConfig::XCB
+        PkgConfig::FFMPEG
+        SDL2::SDL2
+        Threads::Threads
     )
 endif()
 
